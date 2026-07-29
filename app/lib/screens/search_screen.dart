@@ -21,6 +21,12 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _loading = true;
 
   @override
+  void dispose() {
+    _queryController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     _loadCategories();

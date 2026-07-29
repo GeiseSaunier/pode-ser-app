@@ -13,6 +13,13 @@ disputesRouter.post("/", requireAuth, async (req: AuthedRequest, res) => {
   const isParty = transaction.requesterId === req.userId || transaction.providerId === req.userId;
   if (!isParty) return res.status(403).json({ error: "Você não faz parte dessa troca" });
 
+  if (!["ACEITA", "EM_ANDAMENTO"].includes(transaction.status)) {
+    return res.status(400).json({ error: "Só é possível abrir disputa em trocas em andamento" });
+  }
+
+  const existing = await prisma.dispute.findUnique({ where: { transactionId } });
+  if (existing) return res.status(409).json({ error: "Já existe uma disputa para essa troca" });
+
   const [dispute] = await prisma.$transaction([
     prisma.dispute.create({
       data: {
