@@ -38,8 +38,15 @@ disputesRouter.post("/", requireAuth, async (req: AuthedRequest, res) => {
   res.status(201).json(dispute);
 });
 
-// Resolução (uso administrativo/interno — não exposto no app do usuário final)
-disputesRouter.patch("/:id/resolve", requireAuth, async (req: AuthedRequest, res) => {
+function requireAdmin(req: AuthedRequest, res: any, next: any) {
+  const key = req.headers["x-admin-key"];
+  if (!process.env.ADMIN_KEY || key !== process.env.ADMIN_KEY) {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+  next();
+}
+
+disputesRouter.patch("/:id/resolve", requireAuth, requireAdmin, async (req: AuthedRequest, res) => {
   const { id } = req.params;
   const { status, resolutionNote } = req.body; // RESOLVIDA_CREDITO | RESOLVIDA_ESTORNO | SEM_ACORDO
 

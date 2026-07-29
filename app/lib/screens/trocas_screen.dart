@@ -121,6 +121,24 @@ class _TrocasScreenState extends State<TrocasScreen> {
         }
         break;
 
+      case 'DISPUTA':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Disputa em análise. Resolução em até 48h.')),
+        );
+        break;
+
+      case 'CANCELADA':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Essa troca foi cancelada.')),
+        );
+        break;
+
+      case 'RECUSADA':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sua proposta foi recusada.')),
+        );
+        break;
+
       default:
         break;
     }

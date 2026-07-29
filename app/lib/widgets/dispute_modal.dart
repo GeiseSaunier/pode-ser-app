@@ -74,8 +74,16 @@ Future<void> showDisputeModal(
                       ? null
                       : () async {
                           setState(() => loading = true);
-                          await onSubmit(reason, descriptionController.text);
-                          if (ctx.mounted) Navigator.pop(ctx);
+                          try {
+                            await onSubmit(reason, descriptionController.text);
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              setState(() => loading = false);
+                              ScaffoldMessenger.of(ctx)
+                                  .showSnackBar(SnackBar(content: Text('$e')));
+                            }
+                          }
                         },
                   child: Text(loading ? 'Enviando...' : 'Enviar para análise'),
                 ),

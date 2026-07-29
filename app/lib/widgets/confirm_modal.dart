@@ -61,8 +61,16 @@ Future<void> showConfirmModal(
                           ? null
                           : () async {
                               setState(() => loading = true);
-                              await onConfirm();
-                              if (ctx.mounted) Navigator.pop(ctx);
+                              try {
+                                await onConfirm();
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              } catch (e) {
+                                if (ctx.mounted) {
+                                  setState(() => loading = false);
+                                  ScaffoldMessenger.of(ctx)
+                                      .showSnackBar(SnackBar(content: Text('$e')));
+                                }
+                              }
                             },
                       child: Text(youConfirmed ? 'Você já confirmou' : (loading ? 'Confirmando...' : 'Confirmar conclusão')),
                     ),
