@@ -7,13 +7,14 @@ Future<void> showReviewModal(
   required AppTransaction transaction,
   required String currentUserId,
   required Future<void> Function(int rating, String? comment) onSubmit,
-}) {
+}) async {
   final counterpart = transaction.requesterId == currentUserId
       ? transaction.providerName
       : transaction.requesterName;
   final commentController = TextEditingController();
 
-  return showModalBottomSheet(
+  try {
+  await showModalBottomSheet<void>(
     context: context,
     backgroundColor: AppColors.paper,
     isScrollControlled: true,
@@ -100,4 +101,7 @@ Future<void> showReviewModal(
       );
     },
   );
+  } finally {
+    commentController.dispose();
+  }
 }

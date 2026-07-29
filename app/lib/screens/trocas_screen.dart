@@ -118,6 +118,10 @@ class _TrocasScreenState extends State<TrocasScreen> {
             currentUserId: userId,
             onSubmit: (rating, comment) => _review(t.id, rating, comment),
           );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Essa troca já foi avaliada.')),
+          );
         }
         break;
 

@@ -13,11 +13,12 @@ Future<void> showDisputeModal(
   BuildContext context, {
   required AppTransaction transaction,
   required Future<void> Function(String reason, String description) onSubmit,
-}) {
+}) async {
   String reason = 'NAO_ENTREGUE';
   final descriptionController = TextEditingController();
 
-  return showModalBottomSheet(
+  try {
+  await showModalBottomSheet<void>(
     context: context,
     backgroundColor: AppColors.paper,
     isScrollControlled: true,
@@ -94,4 +95,7 @@ Future<void> showDisputeModal(
       );
     },
   );
+  } finally {
+    descriptionController.dispose();
+  }
 }

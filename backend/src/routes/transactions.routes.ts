@@ -93,6 +93,16 @@ transactionsRouter.post("/:id/confirm", requireAuth, asyncHandler(async (req: Au
     (isRequester || transaction.requesterConfirmedAt) &&
     (isProvider || transaction.providerConfirmedAt);
 
+  if (willComplete) {
+    const requester = await prisma.user.findUnique({
+      where: { id: transaction.requesterId },
+      select: { creditBalance: true },
+    });
+    if (!requester || requester.creditBalance < transaction.creditsAgreed) {
+      return res.status(400).json({ error: "Saldo insuficiente para concluir a troca" });
+    }
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.transaction.update({
       where: { id },
