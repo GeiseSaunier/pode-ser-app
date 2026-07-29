@@ -9,6 +9,7 @@ class AppTransaction {
   final String skillTitle;
   final DateTime? requesterConfirmedAt;
   final DateTime? providerConfirmedAt;
+  final bool hasReview;
 
   AppTransaction({
     required this.id,
@@ -21,6 +22,7 @@ class AppTransaction {
     required this.skillTitle,
     required this.requesterConfirmedAt,
     required this.providerConfirmedAt,
+    required this.hasReview,
   });
 
   factory AppTransaction.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class AppTransaction {
       providerConfirmedAt: json['providerConfirmedAt'] != null
           ? DateTime.tryParse(json['providerConfirmedAt'])
           : null,
+      hasReview: json['review'] != null,
     );
   }
 }

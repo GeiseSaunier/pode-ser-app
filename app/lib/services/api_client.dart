@@ -44,6 +44,9 @@ class ApiClient {
       case 'PATCH':
         response = await http.patch(uri, headers: headers, body: body != null ? jsonEncode(body) : null);
         break;
+      case 'DELETE':
+        response = await http.delete(uri, headers: headers);
+        break;
       default:
         response = await http.get(uri, headers: headers);
     }
@@ -83,10 +86,11 @@ class ApiClient {
     return data as Map<String, dynamic>;
   }
 
-  static Future<List<dynamic>> searchSkills({String? q, String? mode}) async {
+  static Future<List<dynamic>> searchSkills({String? q, String? mode, String? category}) async {
     final params = <String, String>{};
     if (q != null && q.isNotEmpty) params['q'] = q;
     if (mode != null) params['mode'] = mode;
+    if (category != null) params['category'] = category;
     final query = params.isEmpty ? '' : '?${Uri(queryParameters: params).query}';
     final data = await _request('/skills$query');
     return data as List<dynamic>;
@@ -115,5 +119,35 @@ class ApiClient {
     final data = await _request('/disputes',
         method: 'POST', body: {'transactionId': transactionId, 'reason': reason, 'description': description});
     return data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> acceptTransaction(String id) async {
+    final data = await _request('/transactions/$id/accept', method: 'PATCH');
+    return data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> refuseTransaction(String id) async {
+    final data = await _request('/transactions/$id/refuse', method: 'PATCH');
+    return data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> submitReview({
+    required String transactionId,
+    required int rating,
+    String? comment,
+  }) async {
+    final data = await _request('/reviews',
+        method: 'POST', body: {'transactionId': transactionId, 'rating': rating, 'comment': comment});
+    return data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> updateProfile({String? name, String? bio}) async {
+    final data = await _request('/users/me', method: 'PATCH', body: {'name': name, 'bio': bio});
+    return data as Map<String, dynamic>;
+  }
+
+  static Future<List<String>> fetchCategories() async {
+    final data = await _request('/skills/categories');
+    return (data as List).cast<String>();
   }
 }

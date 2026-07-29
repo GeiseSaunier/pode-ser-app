@@ -4,7 +4,16 @@ import { requireAuth, AuthedRequest } from "../middleware/auth";
 
 export const skillsRouter = Router();
 
-// Busca pública de ofertas (equivalente à tela "Buscar" do app)
+skillsRouter.get("/categories", async (_req, res) => {
+  const rows = await prisma.skill.findMany({
+    where: { type: "OFERTA" },
+    select: { category: true },
+    distinct: ["category"],
+    orderBy: { category: "asc" },
+  });
+  res.json(rows.map((r) => r.category).filter(Boolean));
+});
+
 skillsRouter.get("/", async (req, res) => {
   const { q, mode, category } = req.query;
 

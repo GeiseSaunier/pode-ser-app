@@ -5,8 +5,9 @@ import '../providers/auth_provider.dart';
 
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final List<Widget>? actions;
 
-  const AppHeader({super.key, required this.title});
+  const AppHeader({super.key, required this.title, this.actions});
 
   @override
   Size get preferredSize => const Size.fromHeight(84);
@@ -35,20 +36,29 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0xFF3A3729)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.swap_horiz, size: 15, color: AppColors.paper),
-                  const SizedBox(width: 6),
-                  Text('$credits créditos', style: const TextStyle(color: AppColors.paper, fontSize: 13)),
-                ],
-              ),
+            Row(
+              children: [
+                if (actions != null)
+                  ...actions!.map((a) => IconTheme(
+                        data: const IconThemeData(color: AppColors.paper),
+                        child: a,
+                      )),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: const Color(0xFF3A3729)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.swap_horiz, size: 15, color: AppColors.paper),
+                      const SizedBox(width: 6),
+                      Text('$credits créditos', style: const TextStyle(color: AppColors.paper, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),

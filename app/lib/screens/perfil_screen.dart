@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../widgets/header.dart';
+import 'edit_perfil_screen.dart';
 
 class PerfilScreen extends StatelessWidget {
   const PerfilScreen({super.key});
@@ -21,7 +22,18 @@ class PerfilScreen extends StatelessWidget {
         .toUpperCase();
 
     return Scaffold(
-      appBar: const AppHeader(title: 'Meu perfil'),
+      appBar: AppHeader(
+        title: 'Meu perfil',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EditPerfilScreen()),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

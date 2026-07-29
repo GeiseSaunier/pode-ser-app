@@ -7,15 +7,17 @@ import '../theme.dart';
 import '../widgets/header.dart';
 import '../widgets/confirm_modal.dart';
 import '../widgets/dispute_modal.dart';
+import '../widgets/proposal_modal.dart';
+import '../widgets/review_modal.dart';
 
 const _statusMeta = {
   'PROPOSTA': ('Aguardando aceite', AppColors.gold),
-  'ACEITA': ('Aceita', AppColors.slate),
+  'ACEITA': ('Aceita', AppColors.moss),
   'EM_ANDAMENTO': ('Em andamento', AppColors.slate),
   'DISPUTA': ('Em disputa', AppColors.danger),
   'CONCLUIDA': ('Concluída', AppColors.moss),
   'CANCELADA': ('Cancelada', AppColors.slate),
-  'RECUSADA': ('Recusada', AppColors.slate),
+  'RECUSADA': ('Recusada', AppColors.danger),
 };
 
 class TrocasScreen extends StatefulWidget {
@@ -40,9 +42,23 @@ class _TrocasScreenState extends State<TrocasScreen> {
     try {
       final data = await ApiClient.myTransactions();
       setState(() => _trocas = data.map((e) => AppTransaction.fromJson(e)).toList());
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _accept(String id) async {
+    await ApiClient.acceptTransaction(id);
+    await _load();
+  }
+
+  Future<void> _refuse(String id) async {
+    await ApiClient.refuseTransaction(id);
+    await _load();
   }
 
   Future<void> _confirm(String id) async {
@@ -54,6 +70,60 @@ class _TrocasScreenState extends State<TrocasScreen> {
   Future<void> _dispute(String transactionId, String reason, String description) async {
     await ApiClient.openDispute(transactionId: transactionId, reason: reason, description: description);
     await _load();
+  }
+
+  Future<void> _review(String transactionId, int rating, String? comment) async {
+    await ApiClient.submitReview(transactionId: transactionId, rating: rating, comment: comment);
+    await _load();
+    if (mounted) await context.read<AuthProvider>().refreshUser();
+  }
+
+  void _onTap(AppTransaction t, String userId) {
+    switch (t.status) {
+      case 'PROPOSTA':
+        if (t.providerId == userId) {
+          showProposalModal(
+            context,
+            transaction: t,
+            onAccept: () => _accept(t.id),
+            onRefuse: () => _refuse(t.id),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Aguardando o prestador aceitar a proposta.')),
+          );
+        }
+        break;
+
+      case 'ACEITA':
+      case 'EM_ANDAMENTO':
+        showConfirmModal(
+          context,
+          transaction: t,
+          currentUserId: userId,
+          onConfirm: () => _confirm(t.id),
+          onDispute: () => showDisputeModal(
+            context,
+            transaction: t,
+            onSubmit: (reason, desc) => _dispute(t.id, reason, desc),
+          ),
+        );
+        break;
+
+      case 'CONCLUIDA':
+        if (!t.hasReview) {
+          showReviewModal(
+            context,
+            transaction: t,
+            currentUserId: userId,
+            onSubmit: (rating, comment) => _review(t.id, rating, comment),
+          );
+        }
+        break;
+
+      default:
+        break;
+    }
   }
 
   @override
@@ -76,19 +146,12 @@ class _TrocasScreenState extends State<TrocasScreen> {
                       final t = _trocas[i];
                       final meta = _statusMeta[t.status] ?? ('Status', AppColors.slate);
                       final counterpart = t.requesterId == userId ? t.providerName : t.requesterName;
+                      final isProvider = t.providerId == userId;
+                      final isProposta = t.status == 'PROPOSTA';
+                      final isConcluida = t.status == 'CONCLUIDA';
 
                       return GestureDetector(
-                        onTap: () => showConfirmModal(
-                          context,
-                          transaction: t,
-                          currentUserId: userId,
-                          onConfirm: () => _confirm(t.id),
-                          onDispute: () => showDisputeModal(
-                            context,
-                            transaction: t,
-                            onSubmit: (reason, desc) => _dispute(t.id, reason, desc),
-                          ),
-                        ),
+                        onTap: () => _onTap(t, userId),
                         child: AppCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,14 +159,25 @@ class _TrocasScreenState extends State<TrocasScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(counterpart, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                                      Text(t.skillTitle, style: const TextStyle(fontSize: 13, color: AppColors.slate)),
-                                    ],
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(counterpart,
+                                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                        Text(t.skillTitle,
+                                            style: const TextStyle(fontSize: 13, color: AppColors.slate)),
+                                      ],
+                                    ),
                                   ),
-                                  const Icon(Icons.chevron_right, size: 18, color: AppColors.slate),
+                                  if (isProposta && isProvider)
+                                    const Text('Toque para responder',
+                                        style: TextStyle(fontSize: 11, color: AppColors.gold))
+                                  else if (isConcluida && !t.hasReview)
+                                    const Text('Toque para avaliar',
+                                        style: TextStyle(fontSize: 11, color: AppColors.moss))
+                                  else
+                                    const Icon(Icons.chevron_right, size: 18, color: AppColors.slate),
                                 ],
                               ),
                               const SizedBox(height: 10),

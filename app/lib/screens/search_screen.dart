@@ -15,13 +15,23 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _queryController = TextEditingController();
   String _mode = 'todos';
+  String? _category;
   List<Skill> _offers = [];
+  List<String> _categories = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
+    _loadCategories();
     _load();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final cats = await ApiClient.fetchCategories();
+      if (mounted) setState(() => _categories = cats);
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -30,6 +40,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final data = await ApiClient.searchSkills(
         q: _queryController.text.trim().isEmpty ? null : _queryController.text.trim(),
         mode: _mode == 'todos' ? null : _mode,
+        category: _category,
       );
       setState(() => _offers = data.map((e) => Skill.fromJson(e)).toList());
     } catch (_) {
@@ -74,6 +85,22 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  Widget _filterChip(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.ink : AppColors.card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: selected ? AppColors.ink : AppColors.line),
+        ),
+        child: Text(label,
+            style: TextStyle(fontSize: 12, color: selected ? AppColors.paper : AppColors.slate)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,34 +135,55 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: ['todos', 'PRESENCIAL', 'REMOTO'].map((f) {
-                final selected = _mode == f;
-                final label = f == 'todos' ? 'Todos' : (f == 'PRESENCIAL' ? 'Presencial' : 'Remoto');
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => _mode = f);
-                      _load();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: selected ? AppColors.ink : AppColors.card,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: selected ? AppColors.ink : AppColors.line),
-                      ),
-                      child: Text(label,
-                          style: TextStyle(fontSize: 12, color: selected ? AppColors.paper : AppColors.slate)),
-                    ),
-                  ),
-                );
-              }).toList(),
+          SizedBox(
+            height: 36,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _filterChip('Todos', _mode == 'todos', () {
+                  setState(() => _mode = 'todos');
+                  _load();
+                }),
+                const SizedBox(width: 8),
+                _filterChip('Presencial', _mode == 'PRESENCIAL', () {
+                  setState(() => _mode = 'PRESENCIAL');
+                  _load();
+                }),
+                const SizedBox(width: 8),
+                _filterChip('Remoto', _mode == 'REMOTO', () {
+                  setState(() => _mode = 'REMOTO');
+                  _load();
+                }),
+              ],
             ),
           ),
+          if (_categories.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 36,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  _filterChip('Todas categorias', _category == null, () {
+                    setState(() => _category = null);
+                    _load();
+                  }),
+                  ..._categories.map((cat) {
+                    final selected = _category == cat;
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: _filterChip(cat, selected, () {
+                        setState(() => _category = selected ? null : cat);
+                        _load();
+                      }),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           Expanded(
             child: _loading
@@ -151,7 +199,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                           itemCount: _offers.length,
                           separatorBuilder: (_, __) => const SizedBox(height: 12),
-                          itemBuilder: (ctx, i) => OfferCard(offer: _offers[i], onPropose: () => _propose(_offers[i])),
+                          itemBuilder: (ctx, i) =>
+                              OfferCard(offer: _offers[i], onPropose: () => _propose(_offers[i])),
                         ),
                       ),
           ),
