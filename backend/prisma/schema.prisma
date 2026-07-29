@@ -1,0 +1,153 @@
+// Modelo de dados do "Pode ser?"
+// Ver README para o resumo das regras de negócio (ledger imutável, confirmação dupla, disputas).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  bio           String?
+  ratingAvg     Decimal   @default(0) @db.Decimal(3, 2)
+  creditBalance Int       @default(0)
+  verifiedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  skills          Skill[]
+  ledgerEntries   CreditLedger[]
+  requestedTx     Transaction[]  @relation("requester")
+  providedTx      Transaction[]  @relation("provider")
+  disputesOpened  Dispute[]
+  reviewsWritten  Review[]       @relation("reviewer")
+  reviewsReceived Review[]       @relation("reviewee")
+}
+
+enum SkillType {
+  OFERTA
+  DESEJO
+}
+
+enum SkillMode {
+  PRESENCIAL
+  REMOTO
+}
+
+model Skill {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  type           SkillType
+  title          String
+  category       String
+  mode           SkillMode
+  creditsPerHour Int       @default(1)
+  createdAt      DateTime  @default(now())
+
+  transactions Transaction[]
+
+  @@index([category])
+  @@index([type])
+}
+
+enum LedgerReason {
+  TROCA_CONCLUIDA
+  AJUSTE
+  BONUS_CADASTRO
+  ESTORNO_DISPUTA
+}
+
+// Fonte da verdade do saldo de créditos. Nunca é editado, só inserido.
+model CreditLedger {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  amount        Int
+  reason        LedgerReason
+  createdAt     DateTime     @default(now())
+
+  @@index([userId])
+}
+
+enum TransactionStatus {
+  PROPOSTA
+  ACEITA
+  EM_ANDAMENTO
+  CONCLUIDA
+  DISPUTA
+  CANCELADA
+  RECUSADA
+}
+
+model Transaction {
+  id                   String            @id @default(uuid())
+  requesterId          String
+  requester            User              @relation("requester", fields: [requesterId], references: [id])
+  providerId           String
+  provider             User              @relation("provider", fields: [providerId], references: [id])
+  skillId              String
+  skill                Skill             @relation(fields: [skillId], references: [id])
+  creditsAgreed         Int
+  status               TransactionStatus @default(PROPOSTA)
+  requesterConfirmedAt DateTime?
+  providerConfirmedAt  DateTime?
+  scheduledAt          DateTime?
+  createdAt            DateTime          @default(now())
+
+  ledgerEntries CreditLedger[]
+  dispute       Dispute?
+  review        Review?
+
+  @@index([requesterId])
+  @@index([providerId])
+}
+
+enum DisputeReason {
+  NAO_ENTREGUE
+  QUALIDADE
+  NO_SHOW
+  OUTRO
+}
+
+enum DisputeStatus {
+  EM_ANALISE
+  RESOLVIDA_CREDITO
+  RESOLVIDA_ESTORNO
+  SEM_ACORDO
+}
+
+model Dispute {
+  id             String        @id @default(uuid())
+  transactionId  String        @unique
+  transaction    Transaction   @relation(fields: [transactionId], references: [id])
+  openedById     String
+  openedBy       User          @relation(fields: [openedById], references: [id])
+  reason         DisputeReason
+  description    String
+  status         DisputeStatus @default(EM_ANALISE)
+  resolutionNote String?
+  openedAt       DateTime      @default(now())
+  resolvedAt     DateTime?
+}
+
+model Review {
+  id            String      @id @default(uuid())
+  transactionId String      @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  reviewerId    String
+  reviewer      User        @relation("reviewer", fields: [reviewerId], references: [id])
+  revieweeId    String
+  reviewee      User        @relation("reviewee", fields: [revieweeId], references: [id])
+  rating        Int
+  comment       String?
+  createdAt     DateTime    @default(now())
+}

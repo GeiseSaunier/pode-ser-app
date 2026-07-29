@@ -1,0 +1,23 @@
+# Backend
+backend/node_modules/
+backend/.env
+backend/dist/
+
+# Flutter build
+app/build/
+app/.dart_tool/
+app/.flutter-plugins-dependencies
+app/.pub-cache/
+app/.pub/
+app/android/app/debug/
+app/android/app/profile/
+app/android/app/release/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
