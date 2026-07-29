@@ -77,11 +77,19 @@ Future<void> showReviewModal(
                       ? null
                       : () async {
                           setState(() => loading = true);
-                          final comment = commentController.text.trim().isEmpty
-                              ? null
-                              : commentController.text.trim();
-                          await onSubmit(rating, comment);
-                          if (ctx.mounted) Navigator.pop(ctx);
+                          try {
+                            final comment = commentController.text.trim().isEmpty
+                                ? null
+                                : commentController.text.trim();
+                            await onSubmit(rating, comment);
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              setState(() => loading = false);
+                              ScaffoldMessenger.of(ctx)
+                                  .showSnackBar(SnackBar(content: Text('$e')));
+                            }
+                          }
                         },
                   child: Text(loading ? 'Enviando...' : 'Enviar avaliação'),
                 ),

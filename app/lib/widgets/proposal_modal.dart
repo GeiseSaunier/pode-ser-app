@@ -52,8 +52,16 @@ Future<void> showProposalModal(
                           ? null
                           : () async {
                               setState(() => loading = true);
-                              await onAccept();
-                              if (ctx.mounted) Navigator.pop(ctx);
+                              try {
+                                await onAccept();
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              } catch (e) {
+                                if (ctx.mounted) {
+                                  setState(() => loading = false);
+                                  ScaffoldMessenger.of(ctx)
+                                      .showSnackBar(SnackBar(content: Text('$e')));
+                                }
+                              }
                             },
                       child: Text(loading ? 'Aceitando...' : 'Aceitar'),
                     ),
@@ -65,8 +73,16 @@ Future<void> showProposalModal(
                           ? null
                           : () async {
                               setState(() => loading = true);
-                              await onRefuse();
-                              if (ctx.mounted) Navigator.pop(ctx);
+                              try {
+                                await onRefuse();
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              } catch (e) {
+                                if (ctx.mounted) {
+                                  setState(() => loading = false);
+                                  ScaffoldMessenger.of(ctx)
+                                      .showSnackBar(SnackBar(content: Text('$e')));
+                                }
+                              }
                             },
                       child: const Text('Recusar'),
                     ),
