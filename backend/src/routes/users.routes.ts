@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
+import { asyncHandler } from "../lib/asyncHandler";
 
 export const usersRouter = Router();
 
-usersRouter.get("/me", requireAuth, async (req: AuthedRequest, res) => {
+usersRouter.get("/me", requireAuth, asyncHandler(async (req: AuthedRequest, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId },
     include: { skills: true },
@@ -13,9 +14,9 @@ usersRouter.get("/me", requireAuth, async (req: AuthedRequest, res) => {
 
   const { passwordHash, ...safeUser } = user;
   res.json(safeUser);
-});
+}));
 
-usersRouter.patch("/me", requireAuth, async (req: AuthedRequest, res) => {
+usersRouter.patch("/me", requireAuth, asyncHandler(async (req: AuthedRequest, res) => {
   const { bio, name } = req.body;
   const user = await prisma.user.update({
     where: { id: req.userId },
@@ -23,4 +24,4 @@ usersRouter.patch("/me", requireAuth, async (req: AuthedRequest, res) => {
   });
   const { passwordHash, ...safeUser } = user;
   res.json(safeUser);
-});
+}));

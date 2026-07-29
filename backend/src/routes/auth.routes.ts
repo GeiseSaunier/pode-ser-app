@@ -2,13 +2,13 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma";
 import { signToken } from "../lib/jwt";
+import { asyncHandler } from "../lib/asyncHandler";
 
 export const authRouter = Router();
 
-// Todo usuário novo ganha um pequeno saldo de boas-vindas (ver README / modelo de dados).
 const WELCOME_BONUS = 2;
 
-authRouter.post("/register", async (req, res) => {
+authRouter.post("/register", asyncHandler(async (req, res) => {
   const { name, email, password, oferece, quer } = req.body;
 
   if (!name || !email || !password) {
@@ -52,9 +52,9 @@ authRouter.post("/register", async (req, res) => {
 
   const token = signToken(user.id);
   res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email } });
-});
+}));
 
-authRouter.post("/login", async (req, res) => {
+authRouter.post("/login", asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const user = await prisma.user.findUnique({ where: { email } });
@@ -65,4 +65,4 @@ authRouter.post("/login", async (req, res) => {
 
   const token = signToken(user.id);
   res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
-});
+}));

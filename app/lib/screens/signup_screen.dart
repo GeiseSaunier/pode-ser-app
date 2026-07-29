@@ -123,9 +123,28 @@ class _SignupScreenState extends State<SignupScreen> {
           decoration: const InputDecoration(hintText: '••••••••', prefixIcon: Icon(Icons.lock_outline, size: 18)),
         ),
         const SizedBox(height: 20),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+        ],
+        const SizedBox(height: 18),
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton(onPressed: () => setState(() => _step = 2), child: const Text('Continuar')),
+          child: ElevatedButton(
+            onPressed: () {
+              if (_nameController.text.trim().isEmpty ||
+                  _emailController.text.trim().isEmpty ||
+                  _passwordController.text.isEmpty) {
+                setState(() => _error = 'Preencha todos os campos para continuar.');
+                return;
+              }
+              setState(() {
+                _error = null;
+                _step = 2;
+              });
+            },
+            child: const Text('Continuar'),
+          ),
         ),
         const SizedBox(height: 24),
       ],

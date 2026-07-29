@@ -1,10 +1,19 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
+import { asyncHandler } from "../lib/asyncHandler";
 
 export const disputesRouter = Router();
 
-disputesRouter.post("/", requireAuth, async (req: AuthedRequest, res) => {
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const key = req.headers["x-admin-key"];
+  if (!process.env.ADMIN_KEY || key !== process.env.ADMIN_KEY) {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+  next();
+}
+
+disputesRouter.post("/", requireAuth, asyncHandler(async (req: AuthedRequest, res) => {
   const { transactionId, reason, description } = req.body;
 
   const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } });
@@ -22,12 +31,7 @@ disputesRouter.post("/", requireAuth, async (req: AuthedRequest, res) => {
 
   const [dispute] = await prisma.$transaction([
     prisma.dispute.create({
-      data: {
-        transactionId,
-        openedById: req.userId!,
-        reason,
-        description,
-      },
+      data: { transactionId, openedById: req.userId!, reason, description },
     }),
     prisma.transaction.update({
       where: { id: transactionId },
@@ -36,19 +40,11 @@ disputesRouter.post("/", requireAuth, async (req: AuthedRequest, res) => {
   ]);
 
   res.status(201).json(dispute);
-});
+}));
 
-function requireAdmin(req: AuthedRequest, res: any, next: any) {
-  const key = req.headers["x-admin-key"];
-  if (!process.env.ADMIN_KEY || key !== process.env.ADMIN_KEY) {
-    return res.status(403).json({ error: "Acesso restrito" });
-  }
-  next();
-}
-
-disputesRouter.patch("/:id/resolve", requireAuth, requireAdmin, async (req: AuthedRequest, res) => {
+disputesRouter.patch("/:id/resolve", requireAuth, requireAdmin, asyncHandler(async (req: AuthedRequest, res) => {
   const { id } = req.params;
-  const { status, resolutionNote } = req.body; // RESOLVIDA_CREDITO | RESOLVIDA_ESTORNO | SEM_ACORDO
+  const { status, resolutionNote } = req.body;
 
   const dispute = await prisma.dispute.findUnique({ where: { id }, include: { transaction: true } });
   if (!dispute) return res.status(404).json({ error: "Disputa não encontrada" });
@@ -78,4 +74,4 @@ disputesRouter.patch("/:id/resolve", requireAuth, requireAdmin, async (req: Auth
   });
 
   res.json(updated);
-});
+}));

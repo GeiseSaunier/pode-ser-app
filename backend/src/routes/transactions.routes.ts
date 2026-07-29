@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
+import { asyncHandler } from "../lib/asyncHandler";
 
 export const transactionsRouter = Router();
 
-transactionsRouter.get("/", requireAuth, async (req: AuthedRequest, res) => {
+transactionsRouter.get("/", requireAuth, asyncHandler(async (req: AuthedRequest, res) => {
   const transactions = await prisma.transaction.findMany({
     where: { OR: [{ requesterId: req.userId }, { providerId: req.userId }] },
     include: {
@@ -17,10 +18,9 @@ transactionsRouter.get("/", requireAuth, async (req: AuthedRequest, res) => {
     orderBy: { createdAt: "desc" },
   });
   res.json(transactions);
-});
+}));
 
-// Propor uma troca (equivalente ao botão "Propor troca" na busca)
-transactionsRouter.post("/", requireAuth, async (req: AuthedRequest, res) => {
+transactionsRouter.post("/", requireAuth, asyncHandler(async (req: AuthedRequest, res) => {
   const { skillId } = req.body;
 
   const skill = await prisma.skill.findUnique({ where: { id: skillId } });
@@ -40,9 +40,9 @@ transactionsRouter.post("/", requireAuth, async (req: AuthedRequest, res) => {
   });
 
   res.status(201).json(transaction);
-});
+}));
 
-transactionsRouter.patch("/:id/accept", requireAuth, async (req: AuthedRequest, res) => {
+transactionsRouter.patch("/:id/accept", requireAuth, asyncHandler(async (req: AuthedRequest, res) => {
   const { id } = req.params;
   const transaction = await prisma.transaction.findUnique({ where: { id } });
   if (!transaction) return res.status(404).json({ error: "Troca não encontrada" });
@@ -54,9 +54,9 @@ transactionsRouter.patch("/:id/accept", requireAuth, async (req: AuthedRequest, 
   }
   const updated = await prisma.transaction.update({ where: { id }, data: { status: "ACEITA" } });
   res.json(updated);
-});
+}));
 
-transactionsRouter.patch("/:id/refuse", requireAuth, async (req: AuthedRequest, res) => {
+transactionsRouter.patch("/:id/refuse", requireAuth, asyncHandler(async (req: AuthedRequest, res) => {
   const { id } = req.params;
   const transaction = await prisma.transaction.findUnique({ where: { id } });
   if (!transaction) return res.status(404).json({ error: "Troca não encontrada" });
@@ -68,9 +68,9 @@ transactionsRouter.patch("/:id/refuse", requireAuth, async (req: AuthedRequest, 
   }
   const updated = await prisma.transaction.update({ where: { id }, data: { status: "RECUSADA" } });
   res.json(updated);
-});
+}));
 
-transactionsRouter.post("/:id/confirm", requireAuth, async (req: AuthedRequest, res) => {
+transactionsRouter.post("/:id/confirm", requireAuth, asyncHandler(async (req: AuthedRequest, res) => {
   const { id } = req.params;
 
   const transaction = await prisma.transaction.findUnique({ where: { id } });
@@ -103,7 +103,6 @@ transactionsRouter.post("/:id/confirm", requireAuth, async (req: AuthedRequest, 
     });
 
     if (willComplete) {
-      // Débito de quem recebeu o favor, crédito de quem prestou.
       await tx.creditLedger.create({
         data: {
           userId: updated.requesterId,
@@ -134,4 +133,4 @@ transactionsRouter.post("/:id/confirm", requireAuth, async (req: AuthedRequest, 
   });
 
   res.json(result);
-});
+}));

@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
+import { asyncHandler } from "../lib/asyncHandler";
 
 export const reviewsRouter = Router();
 
-reviewsRouter.post("/", requireAuth, async (req: AuthedRequest, res) => {
+reviewsRouter.post("/", requireAuth, asyncHandler(async (req: AuthedRequest, res) => {
   const { transactionId, rating, comment } = req.body;
 
   if (!rating || rating < 1 || rating > 5) {
@@ -40,4 +41,4 @@ reviewsRouter.post("/", requireAuth, async (req: AuthedRequest, res) => {
   });
 
   res.status(201).json(review);
-});
+}));
